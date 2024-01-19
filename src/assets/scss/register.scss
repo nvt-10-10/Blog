@@ -1,0 +1,145 @@
+.main {
+  display: flex;
+  position: relative;
+
+  &-left {
+    width: 50%;
+    z-index: -1;
+  }
+
+  &-img {
+    display: block;
+    width: 100%;
+    height: 100vh;
+    object-fit: cover;
+  }
+
+  &-right {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    top: 0;
+    width: 55%;
+    padding: 100px 70px;
+    border-radius: 2rem 0rem 0rem 2rem;
+    background: #f7f8ff;
+
+    z-index: 1;
+  }
+}
+
+.register-heading {
+  color: #000;
+  text-align: center;
+  font-family: Roboto;
+  font-size: 3rem;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 3rem; /* 100% */
+  letter-spacing: 0.45rem;
+}
+
+.sign-in {
+  &-group {
+    margin-top: 50px;
+    display: flex;
+    justify-content: space-between;
+    gap: 30px;
+  }
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 27.5rem;
+  height: 5.5rem;
+  border-radius: 1rem;
+  border: 1px solid rgba($color: #969696, $alpha: 0.2);
+  background-color: transparent;
+
+  color: #000;
+  text-align: center;
+  font-family: Roboto;
+  font-size: 1.8rem;
+  font-style: normal;
+  font-weight: 300;
+
+  &-img {
+    width: 4.1rem;
+    height: 3.3rem;
+    object-fit: contain;
+  }
+}
+
+.or {
+  margin-top: 40px;
+  color: #000;
+  text-align: center;
+  font-family: Roboto;
+  font-size: 1.8rem;
+  font-style: normal;
+  font-weight: 300;
+  letter-spacing: 0.27rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  width: 43.4001rem;
+  margin: 80px auto 0;
+
+  &-input {
+    padding: 8px 16px 8px 0;
+    border: none;
+    border-bottom: 1px solid #7e896e;
+    background-color: transparent;
+    color: #000;
+    font-family: Roboto;
+    font-size: 1.8rem;
+    font-style: normal;
+    font-weight: 300;
+    letter-spacing: 0.27rem;
+    + .form-input {
+      margin-top: 30px;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: #000000;
+      border-width: 2px;
+      background-color: transparent;
+    }
+  }
+
+  &-submit {
+    height: 5.3rem;
+    margin-top: 30px;
+    border-radius: 1.5rem;
+    border: none;
+    background: #d5dff6;
+    text-align: center;
+    font-family: Roboto;
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: 0.27rem;
+    color: #000;
+  }
+
+  > span {
+    margin-top: 80px;
+
+    color: #000;
+    font-family: Roboto;
+    font-size: 1.6rem;
+    font-style: normal;
+    font-weight: 100;
+    line-height: 4rem; /* 307.692% */
+
+    > a:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+button:hover {
+  cursor: pointer;
+}

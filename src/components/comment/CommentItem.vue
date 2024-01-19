@@ -1,0 +1,260 @@
+<!-- CommentItem.vue -->
+<template>
+  <article class="comment-item">
+    <div v-if="!is_edit">
+      <div class="comment-item-info">
+        <figure>
+          <img :src="comment?.user?.img" class="comment-user-avt" />
+        </figure>
+
+        <div class="comment-info">
+          <a href="">
+            <h3 class="comment-user-name">{{ comment?.user?.name }}</h3>
+          </a>
+
+          <span class="comment-time">{{
+            // comment?.date
+            formattedDate
+          }}</span>
+        </div>
+
+        <div class="is_edit" v-if="edit">Đã chỉnh sửa</div>
+      </div>
+
+      <div class="comment-item-content">{{ content_comment }}</div>
+
+      <div class="comment-item-bottom">
+        <a href="" :class="{ isLike: like }" @click.prevent="updateLike">Thích</a>
+        <a href="" @click.prevent="toggleReplyForm">Trả lời</a>
+        <a href="" v-if="comment?.user?.id == user_id && !is_reply" @click.prevent="editComment">Chỉnh sửa</a>
+        <a href="" v-if="comment?.user?.id == user_id" @click.prevent="deleteComment(comment_id)">Xóa</a>
+        <div class="like">
+          <svg xmlns="http://www.w3.org/2000/svg" height="16" width="16" viewBox="0 0 512 512">
+            <!--!Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.-->
+            <path
+              d="M323.8 34.8c-38.2-10.9-78.1 11.2-89 49.4l-5.7 20c-3.7 13-10.4 25-19.5 35l-51.3 56.4c-8.9 9.8-8.2 25 1.6 33.9s25 8.2 33.9-1.6l51.3-56.4c14.1-15.5 24.4-34 30.1-54.1l5.7-20c3.6-12.7 16.9-20.1 29.7-16.5s20.1 16.9 16.5 29.7l-5.7 20c-5.7 19.9-14.7 38.7-26.6 55.5c-5.2 7.3-5.8 16.9-1.7 24.9s12.3 13 21.3 13L448 224c8.8 0 16 7.2 16 16c0 6.8-4.3 12.7-10.4 15c-7.4 2.8-13 9-14.9 16.7s.1 15.8 5.3 21.7c2.5 2.8 4 6.5 4 10.6c0 7.8-5.6 14.3-13 15.7c-8.2 1.6-15.1 7.3-18 15.2s-1.6 16.7 3.6 23.3c2.1 2.7 3.4 6.1 3.4 9.9c0 6.7-4.2 12.6-10.2 14.9c-11.5 4.5-17.7 16.9-14.4 28.8c.4 1.3 .6 2.8 .6 4.3c0 8.8-7.2 16-16 16H286.5c-12.6 0-25-3.7-35.5-10.7l-61.7-41.1c-11-7.4-25.9-4.4-33.3 6.7s-4.4 25.9 6.7 33.3l61.7 41.1c18.4 12.3 40 18.8 62.1 18.8H384c34.7 0 62.9-27.6 64-62c14.6-11.7 24-29.7 24-50c0-4.5-.5-8.8-1.3-13c15.4-11.7 25.3-30.2 25.3-51c0-6.5-1-12.8-2.8-18.7C504.8 273.7 512 257.7 512 240c0-35.3-28.6-64-64-64l-92.3 0c4.7-10.4 8.7-21.2 11.8-32.2l5.7-20c10.9-38.2-11.2-78.1-49.4-89zM32 192c-17.7 0-32 14.3-32 32V448c0 17.7 14.3 32 32 32H96c17.7 0 32-14.3 32-32V224c0-17.7-14.3-32-32-32H32z"
+            />
+          </svg>
+          {{ count_like }}
+        </div>
+      </div>
+    </div>
+    <div v-if="show_reply_form">
+      <FormCommentReply :comment_id="comment.id" :comment_content="content_comment" :is_edit="is_edit" @reload-comment="reloadComment" @reload-comment-edit="reloadCommentEdit" @cancel-comment="cancel" />
+    </div>
+    <div v-show="(comment && comment?.count_comment > 0) || show_replies">
+      <a href="" style="margin-top: 10px; display: block" @click.prevent="handleShowReplies(comment.id)" v-show="count_comment_reply > 0"> Xem thêm {{ count_comment_reply }} phản hồi </a>
+
+      <div v-show="show_replies">
+        <CommentItem v-for="item in comments" :key="item.id" :data="item" @deleteItem="updateCommentDelete" />
+      </div>
+    </div>
+  </article>
+</template>
+
+<script>
+import axios from "@/config/axios-config";
+
+import FormCommentReply from "../comment/FormComment.vue";
+import moment from "moment";
+import "moment-timezone";
+export default {
+  components: {
+    FormCommentReply,
+  },
+  props: {
+    data: Object,
+  },
+
+  data() {
+    return {
+      comments: [],
+      comment: Object,
+      count_comment_reply: 0,
+      comment_id: 0,
+      formattedDate: Date,
+      edit: false,
+      content_comment: "",
+      count_like: 0,
+      show_reply_form: false,
+      show_replies: false,
+      user_id: -1,
+      is_edit: false,
+      is_reply: false,
+      content: "",
+      like: false,
+
+      form_like: {
+        user_id: this.user_id,
+        comment_id: this.comment_id,
+      },
+    };
+  },
+  created() {
+    console.log(this.data);
+    const storedUser = sessionStorage.getItem("user");
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      this.user_id = user.id;
+    } else {
+      console.log("Không có dữ liệu người dùng trong LocalStorage");
+    }
+    if (this.data?.isLike != null) {
+      this.like = this.data?.isLike;
+      this.comment = this.data?.comment;
+      this.count_comment_reply = this.data?.comment?.count_comment;
+      this.comment_id = this.data?.comment?.id;
+      this.formattedDate = this.compareTime(this.data?.comment?.date);
+      this.edit = this.data?.comment?.edit;
+      this.content_comment = this.data?.comment?.content;
+      this.count_like = this.data?.comment?.count_like;
+      this.like_id = this.data?.like_id;
+    } else {
+      this.comment = this.data;
+      this.formattedDate = this.compareTime(this.data?.date);
+      this.comment_id = this.data?.id;
+      this.content_comment = this.data?.content;
+    }
+  },
+
+  mounted() {
+    setInterval(() => {
+      if (this.data?.comment != null) this.formattedDate = this.compareTime(this.data?.comment?.date);
+      else this.formattedDate = this.compareTime(this.data?.date);
+    }, 60000);
+
+    this.form_like.comment_id = this.comment?.id;
+    this.form_like.user_id = this.user_id;
+    this.like = this.data?.isLike;
+  },
+
+  methods: {
+    compareTime(timeString) {
+      var time = moment.tz(timeString, "Asia/Ho_Chi_Minh");
+      var now = moment().tz("Asia/Ho_Chi_Minh");
+      var diff = now.diff(time, "minutes");
+      var result = "";
+      if (diff >= 10080) {
+        return time.format("DD MM YYYY HH mm");
+      } else if (diff < 1) {
+        result = "vừa mới đăng";
+      } else if (diff < 60) {
+        result = diff + " phút trước";
+      } else if (diff < 1440) {
+        result = Math.floor(diff / 60) + " giờ trước";
+      } else if (diff < 10080) {
+        result = Math.floor(diff / 1440) + " ngày trước";
+      }
+      return result;
+    },
+    async handleShowReplies(comment_id) {
+      this.show_replies = !this.show_replies;
+      try {
+        const response = await axios.get(`/api/comments/comment-reply/${comment_id}/user_id/${this.user_id}`);
+        this.comments = response.data;
+        this.count_comment_reply = 0;
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        throw error;
+      }
+    },
+
+    toggleReplyForm() {
+      if (!this.is_edit) this.show_reply_form = !this.show_reply_form;
+      else {
+        this.content_comment = "";
+      }
+      this.is_reply = !this.is_reply;
+    },
+    reloadComment(comment_id) {
+      this.handleShowReplies(comment_id);
+      this.show_replies = true;
+      this.show_reply_form = false;
+      this.$emit("updateCountComment");
+    },
+    reloadCommentEdit(data) {
+      this.content_comment = data.content;
+      this.show_reply_form = false;
+      this.is_edit = false;
+    },
+
+    editComment() {
+      this.is_edit = true;
+      this.show_reply_form = true;
+      this.content = this.comment.content;
+      this.edit = true;
+    },
+
+    cancel() {
+      this.is_edit = false;
+      this.content = "";
+      this.show_reply_form = false;
+    },
+
+    async deleteComment(id) {
+      this.$emit("deleteItem", this.comment_id);
+      await axios
+        .delete("/api/comments/" + id)
+        .then(() => {})
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+
+    async updateLike() {
+      if (!this.like) {
+        this.count_like = this.count_like + 1;
+        axios
+          .post("/api/likes/addLikeComment", this.form_like)
+          .then((response) => {
+            console.log(response.data.id);
+            this.like_id = response.data.id;
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      } else {
+        this.count_like = this.count_like - 1;
+        console.log(`/api/likes/deleteLikeComment/${this.like_id}/comment_id/${this.data?.comment?.id}`);
+        axios
+          .delete(`/api/likes/deleteLikeComment/${this.like_id}/comment_id/${this.data?.comment?.id}`)
+          .then(() => {
+            console.log("thanh ccong");
+          })
+          .catch((error) => {
+            console.error("Error fetching data:", error);
+          });
+      }
+      this.like = !this.like;
+    },
+    updateCommentDelete(id) {
+      console.log(id);
+
+      for (let comment of this.comments) {
+        console.log(comment);
+      }
+      const index = this.comments.findIndex((comment) => comment.id === id);
+      console.log(index);
+      this.comments.splice(index, 1);
+    },
+  },
+};
+</script>
+
+<style scoped>
+.like {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.comment-item-info {
+  align-items: center;
+}
+.is_edit {
+  margin-left: auto;
+}
+.isLike {
+  color: #0e7aff;
+}
+</style>
