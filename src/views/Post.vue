@@ -34,7 +34,7 @@ export default {
     },
 
     submitForm() {
-      this.$store.dispatch("addPost", this.formData);
+      this.$store.dispatch("createPost", this.formData);
       this.show();
     },
   },

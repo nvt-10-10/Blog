@@ -53,11 +53,10 @@
 </template>
 
 <script>
-import axios from "@/config/axios-config";
-
 import FormCommentReply from "../comment/FormComment.vue";
 import moment from "moment";
 import "moment-timezone";
+import { mapGetters } from "vuex";
 export default {
   components: {
     FormCommentReply,
@@ -69,10 +68,10 @@ export default {
   data() {
     return {
       comments: [],
+      formattedDate: Date,
       comment: Object,
       count_comment_reply: 0,
       comment_id: 0,
-      formattedDate: Date,
       edit: false,
       content_comment: "",
       count_like: 0,
@@ -91,7 +90,6 @@ export default {
     };
   },
   created() {
-    console.log(this.data);
     const storedUser = sessionStorage.getItem("user");
     if (storedUser) {
       const user = JSON.parse(storedUser);
@@ -115,6 +113,11 @@ export default {
       this.comment_id = this.data?.id;
       this.content_comment = this.data?.content;
     }
+  },
+
+  computed: {
+    ...mapGetters("like", ["getLikeItems", "getLikeLoading", "getLikeError"]),
+    ...mapGetters("comment", ["getItems", "getLoading", "getError"]),
   },
 
   mounted() {
@@ -147,12 +150,17 @@ export default {
       }
       return result;
     },
+
     async handleShowReplies(comment_id) {
       this.show_replies = !this.show_replies;
       try {
-        const response = await axios.get(`/api/comments/comment-reply/${comment_id}/user_id/${this.user_id}`);
-        this.comments = response.data;
+        await this.$store.dispatch("comment/fetchCommentReplyByCommentID", {
+          comment_id: comment_id,
+          user_id: this.user_id,
+        });
+        this.comments = this.$store.getters["comment/getItems"];
         this.count_comment_reply = 0;
+        console.log(this.$store.getters["comment/getItems"]);
       } catch (error) {
         console.error("Error fetching data:", error);
         throw error;
@@ -170,12 +178,15 @@ export default {
       this.handleShowReplies(comment_id);
       this.show_replies = true;
       this.show_reply_form = false;
+      this.is_edit = false;
+      this.is_reply = false;
       this.$emit("updateCountComment");
     },
     reloadCommentEdit(data) {
-      this.content_comment = data.content;
+      this.content_comment = data;
       this.show_reply_form = false;
       this.is_edit = false;
+      this.is_reply = false;
     },
 
     editComment() {
@@ -192,38 +203,21 @@ export default {
     },
 
     async deleteComment(id) {
+      this.$store.dispatch("comment/deleteCommentByID", id);
       this.$emit("deleteItem", this.comment_id);
-      await axios
-        .delete("/api/comments/" + id)
-        .then(() => {})
-        .catch((error) => {
-          console.log(error);
-        });
     },
 
     async updateLike() {
       if (!this.like) {
         this.count_like = this.count_like + 1;
-        axios
-          .post("/api/likes/addLikeComment", this.form_like)
-          .then((response) => {
-            console.log(response.data.id);
-            this.like_id = response.data.id;
-          })
-          .catch((error) => {
-            console.log(error);
-          });
+        this.$store.dispatch("like/addLikeComment", this.form_like);
+        this.like_id = this.$store.getters["like/getLikeItems"].id;
       } else {
         this.count_like = this.count_like - 1;
-        console.log(`/api/likes/deleteLikeComment/${this.like_id}/comment_id/${this.data?.comment?.id}`);
-        axios
-          .delete(`/api/likes/deleteLikeComment/${this.like_id}/comment_id/${this.data?.comment?.id}`)
-          .then(() => {
-            console.log("thanh ccong");
-          })
-          .catch((error) => {
-            console.error("Error fetching data:", error);
-          });
+        this.$store.dispatch("like/deleteLikeComment", {
+          like_id: this.like_id,
+          comment_id: this.data?.comment?.id,
+        });
       }
       this.like = !this.like;
     },

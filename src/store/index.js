@@ -1,11 +1,14 @@
 // src/store/index.js
 import { createStore } from "vuex";
-import postModule from "./post";
-import commentModule from "./comment";
-
+import post from "./post";
+import comment from "./comment";
+import like from "./like";
+import user from "./user";
 export default createStore({
   modules: {
-    postModule,
-    commentModule,
+    post,
+    comment,
+    like,
+    user,
   },
 });

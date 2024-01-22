@@ -13,39 +13,48 @@
       <p class="or">-OR-</p>
 
       <form @submit.prevent="submitForm" class="form">
-        <input type="email" name="email" class="form-input" placeholder="Email Address" v-model="formData.email" />
-        <input type="password" name="email" class="form-input form-input-password" placeholder="Password" v-model="formData.password" />
+        <input type="email" name="email" class="form-input" placeholder="Email Address" v-model="formLogin.email" />
+        <input type="password" name="email" class="form-input form-input-password" placeholder="Password" v-model="formLogin.password" />
 
-        <button type="submit" class="form-submit">Login</button>
+        <button type="submit" class="form-submit-login">Login</button>
         <span>Already have an account? <a href="#">Log in</a></span>
       </form>
     </div>
   </main>
 </template>
 <script>
-import axios from "@/config/axios-config";
+import VueCookies from "vue-cookies";
+import { mapGetters } from "vuex";
 export default {
   data() {
     return {
-      formData: {
+      formLogin: {
         email: "",
         password: "",
       },
     };
   },
 
+  computed: {
+    ...mapGetters("user", ["getUserItems", "getUserLoading", "getUserError"]),
+  },
+
   methods: {
-    submitForm() {
-      axios
-        .post("/api/users/login", this.formData)
-        .then((response) => {
-          console.log("Response from server:", response.data);
-          sessionStorage.setItem("user", JSON.stringify(response.data));
-          this.$router.push("/post-list");
-        })
-        .catch((error) => {
-          console.error("Error sending form data:", error);
-        });
+    async submitForm() {
+      await this.$store.dispatch("user/login", this.formLogin);
+      if (this.$store.getters["user/getUserError"] === null) {
+        sessionStorage.setItem("user", JSON.stringify(this.$store.getters["user/getUserItems"]));
+
+        let url = VueCookies.get("url");
+        if (url !== null) {
+          VueCookies.remove("url");
+        } else {
+          url = "/post-list";
+        }
+        this.$router.push(url);
+      } else {
+        alert(this.$store.getters["user/getUserError"]);
+      }
     },
   },
 };

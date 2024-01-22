@@ -114,15 +114,21 @@
 
     <div class="comment">
       <div class="container">
-        <div class="comment-title">Bình luận</div>
+        <div v-if="user_id !== -1">
+          <div class="comment-title">Bình luận</div>
 
-        <form class="form-comment" @submit.prevent="addComment">
-          <div class="form-comment-group">
-            <img :src="user.img" alt="" class="avt-user" />
-            <textarea name="" id="" cols="30" rows="10" v-model="comment_form.content" class="form-comment-textarea" placeholder="Viết bình luận" required></textarea>
-          </div>
-          <button class="form-comment-submit">Bình luận</button>
-        </form>
+          <form class="form-comment" @submit.prevent="addComment">
+            <div class="form-comment-group">
+              <img :src="user.img" alt="" class="avt-user" />
+              <textarea name="" id="" cols="30" rows="10" v-model="comment_form.content" class="form-comment-textarea" placeholder="Viết bình luận" required></textarea>
+            </div>
+            <button class="form-comment-submit">Bình luận</button>
+          </form>
+        </div>
+
+        <div v-else>
+          <a @click.prevent="login" style="cursor: pointer">Vui lòng đăng nhập để bình luận</a>
+        </div>
 
         <div class="comment-list">
           <CommentItem v-for="comment in comments" :key="comment.id" :data="comment" @updateCountComment="updateCountComment" @deleteItem="updateCommentDelete" />
@@ -146,20 +152,22 @@
 
 <script>
 // Import Axios
-import axios from "@/config/axios-config";
 
 import HeaderComponent from "@/components/Header.vue";
 import CommentItem from "@/components/comment/CommentItem.vue";
-
+import VueCookies from "vue-cookies";
+import { mapGetters } from "vuex";
 export default {
   components: {
     HeaderComponent,
     CommentItem,
   },
-  computed: {},
+
   watch: {
     "$route.params.id": {
       handler: function (newId, oldId) {
+        this.comment_form.post_id = this.$route.params.id;
+
         const storedUser = sessionStorage.getItem("user");
         if (storedUser) {
           const user = JSON.parse(storedUser);
@@ -197,7 +205,7 @@ export default {
       },
 
       comments: [],
-      projectId: null,
+      post_id: null,
       count_Comment: "",
       user_id: -1,
       count_like: "",
@@ -209,94 +217,63 @@ export default {
   },
 
   created() {
-    this.fetchDataByPost();
-    this.fetchCommentByPostID();
     this.createdFetchCalled = true;
   },
 
+  computed: {
+    ...mapGetters("comment", ["getItems", "getLoading", "getError"]),
+    ...mapGetters("post", ["getPostItems", "getPostLoading", "getPostError"]),
+    ...mapGetters("like", ["getLikeItems", "getLikeLoading", "getLikeError"]),
+  },
   methods: {
-    fetchDataByPost() {
-      let url = "";
-      this.projectId = this.$route.params.id;
+    async fetchDataByPost() {
+      this.post_id = this.$route.params.id;
       if (this.user_id === null) {
-        url = "api/posts/" + this.projectId;
+        await this.$store.dispatch("post/fetchPostByID", this.post_id);
       } else {
-        url = `api/posts/${this.projectId}/user_id/${this.user_id}`;
+        await this.$store.dispatch("post/fetchPostByIdAndUserID", { post_id: this.post_id, user_id: this.user_id });
+      }
+      const data = this.$store.getters["post/getPostItems"];
+      if (data?.isLike != null) {
+        this.post = data.post;
+        this.isLike = data.isLike;
+        this.like_post_form.like_id = data.id_like;
+      } else {
+        this.post = data;
       }
 
-      axios
-        .get(url)
-        .then((response) => {
-          if (this.user === null) {
-            this.post = response.data;
-          } else {
-            this.post = response.data.post;
-            this.isLike = response.data.isLike;
-            this.like_post_form.like_id = response.data.id_like;
-          }
-          this.fetchDataByUserID();
-          this.count_Comment = this.post.count_comment;
-          this.count_like = this.post.count_like;
-        })
-        .catch((error) => {
-          console.error("Error fetching data:", error);
-        });
+      this.fetchDataByUserID();
+      this.count_Comment = this.post.count_comment;
+      this.count_like = this.post.count_like;
     },
-    fetchDataByUserID() {
-      axios
-        .get(`api/posts/user/${this.post?.user?.id}/post/${this.post.id}`)
-        .then((response) => {
-          this.posts = response.data;
-        })
-        .catch((error) => {
-          console.error("Error fetching data:", error);
-        });
+    async fetchDataByUserID() {
+      await this.$store.dispatch("post/fetchPostByUser", { user_id: this.post.user.id, post_id: this.post_id });
+      this.posts = this.$store.getters["post/getPostItems"];
     },
 
-    fetchCommentByPostID() {
-      // this.comments = computed(=>{
-      //   this.$store.dispatch("commentModule/fetchDataPostByID", { post_id: this.projectId, user_id: this.user_id });
-      // })
-      axios
-        .get(`/api/comments/post/${this.projectId}/user_id/${this.user_id}`)
-        .then((response) => {
-          this.comments = response.data;
-        })
-        .catch((error) => {
-          console.error("Error fetching data:", error);
-        });
+    async fetchCommentByPostID() {
+      try {
+        await this.$store.dispatch("comment/fetchCommentByPostID", { post_id: this.post_id, user_id: this.user_id });
+        this.comments = this.$store.getters["comment/getItems"];
+      } catch (error) {
+        console.error("Error fetching comments:", error);
+      }
     },
 
     updateCommentDelete(id) {
-      console.log(id);
-
-      for (let comment of this.comments) {
-        console.log(comment);
-      }
       const index = this.comments.findIndex((comment) => comment.id === id);
-      console.log(index);
       this.comments.splice(index, 1);
     },
 
-    addComment() {
-      this.comment_form.post_id = this.$route.params.id;
-      axios
-        .post(`api/comments/create`, this.comment_form)
-        .then((response) => {
-          console.log("newComment " + JSON.stringify(response.data));
-
-          if (this.comments?.length > 0) {
-            this.comments.unshift(response.data);
-
-            this.updateCountComment();
-          } else {
-            this.fetchCommentByPostID();
-          }
-          this.comment_form.content = "";
-        })
-        .catch((error) => {
-          console.error("Error fetching data:", error);
-        });
+    async addComment() {
+      await this.$store.dispatch("comment/createComment", this.comment_form);
+      if (this.comments?.length > 0) {
+        this.comments.unshift(this.$store.getters["comment/getItems"]);
+        this.updateCountComment();
+      } else {
+        this.fetchCommentByPostID();
+      }
+      this.comment_form.content = "";
     },
 
     updateCountComment() {
@@ -304,30 +281,24 @@ export default {
     },
 
     async updateCountLike() {
+      this.isLike = !this.isLike;
       if (!this.isLike) {
-        console.log(this.like_post_form);
-        axios
-          .post(`/api/likes/addLikePost`, this.like_post_form)
-          .then((response) => {
-            this.like_post_form.like_id = response.data.id;
-          })
-          .catch((error) => {
-            console.error("Error fetching data:", error);
-          });
         this.count_like = this.count_like + 1;
+        this.$store.dispatch("like/addLikePost", this.like_post_form);
+        this.like_post_form.like_id = this.$store.getters["like/getLikeItems"].id;
+        console.log(this.$store.getters["like/getLikeItems"]);
       } else {
         this.count_like = this.count_like - 1;
-        console.log(this.like_post_form);
-        axios
-          .delete(`/api/likes/deleteLikePost/${this.like_post_form.like_id}/post_id/${this.projectId}`)
-          .then((response) => {
-            console.log(response.data);
-          })
-          .catch((error) => {
-            console.error("Error fetching data:", error);
-          });
+        this.$store.dispatch("like/deleteLikeComment", {
+          like_id: this.like_id,
+          post_id: this.post_id,
+        });
       }
-      this.isLike = !this.isLike;
+    },
+
+    login() {
+      this.$router.push("/login");
+      VueCookies.set("url", this.$route.path, 60 * 15 * 100);
     },
   },
 };

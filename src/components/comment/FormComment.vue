@@ -12,7 +12,7 @@
 </template>
 
 <script>
-import axios from "@/config/axios-config";
+import { mapGetters } from "vuex";
 export default {
   props: {
     comment_id: Number,
@@ -53,31 +53,21 @@ export default {
     console.log("isEdit: \t" + this.is_edit);
   },
 
+  computed: {
+    ...mapGetters("comment", ["getItems", "getLoading", "getError"]),
+  },
+
   methods: {
     async addCommentReply() {
       if (this.is_edit === false) {
-        await axios
-          .post(`api/comments/create-reply`, this.comment_form)
-          .then(() => {
-            this.comment_form.content = "";
-            this.$emit("reload-comment", this.comment_id);
-          })
-          .catch((error) => {
-            console.error("Error fetching data:", error);
-          });
+        await this.$store.dispatch("comment/createCommentReply", this.comment_form);
+        this.comment_form.content = "";
+        this.$emit("reload-comment", this.comment_id);
       } else {
-        await axios
-          .patch(`api/comments/update`, this.comment_form)
-          .then((response) => {
-            this.comment_form.content = "";
-            this.$emit("reload-comment-edit", response.data);
-          })
-          .catch((error) => {
-            console.error("Error fetching data:", error);
-          });
+        this.$emit("reload-comment-edit", this.comment_form.content);
+        this.comment_form.content = "";
       }
     },
-
     cancelEdit() {
       this.$emit("cancel-comment");
     },

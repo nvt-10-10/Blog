@@ -1,5 +1,4 @@
 import axios from "../config/axios-config";
-
 export default {
   namespaced: true,
   state: {
@@ -19,75 +18,70 @@ export default {
       state.error = error;
     },
   },
+
   actions: {
-    async fetchPostByID({ commit }, id) {
-      commit("setLoading", true);
-
-      await axios
-        .get(`api/posts/${id}`)
-        .then((response) => {
-          commit("setItems", response.data);
-          commit("setLoading", false);
-          commit("setError", null);
-        })
-        .catch((error) => {
-          commit("setLoading", false);
-          commit("setError", error.message || "Error fetching items");
-        });
-    },
-
-    async fetchPostByUser({ commit }, { user_id, post_id }) {
-      commit("setLoading", true);
-      await axios
-        .get(`api/posts/user/${user_id}/post/${post_id}`)
-        .then((response) => {
-          console.log(response.data);
-          commit("setItems", response.data);
-          commit("setLoading", false);
-          commit("setError", null);
-        })
-        .catch((error) => {
-          commit("setError", error.message || "Error fetching items");
-          commit("setLoading", false);
-        });
-    },
-
-    async fetchPostByIdAndUserID({ commit }, { post_id, user_id }) {
-      commit("setLoading", true);
-      await axios
-        .get(`api/posts/${post_id}/user_id/${user_id}`)
-        .then((response) => {
-          commit("setItems", response.data);
-          commit("setLoading", false);
-          commit("setError", null);
-        })
-        .catch((error) => {
-          commit("setItems", []);
-          commit("setLoading", false);
-          commit("setError", error.message || "Error fetching items");
-        });
-    },
-
-    async createPost({ commit }, params) {
+    async addLikeComment({ commit }, params) {
       commit("setLoading", true);
       axios
-        .post(`/api/posts/create`, params)
+        .post("/api/likes/addLikeComment", params)
         .then((response) => {
+          commit("setLoading", false);
           commit("setItems", response.data);
+          commit("setError", null);
+        })
+        .catch((error) => {
+          commit("setLoading", false);
+          commit("setError", error);
+        });
+    },
+
+    async addLikePost({ commit }, params) {
+      commit("setLoading", true);
+      axios
+        .post("/api/likes/addLikePost", params)
+        .then((response) => {
+          commit("setLoading", false);
+          commit("setItems", response.data);
+          commit("setError", null);
+        })
+        .catch((error) => {
+          commit("setLoading", false);
+          commit("setError", error);
+        });
+    },
+
+    async deleteLikeComment({ commit }, { like_id, comment_id }) {
+      commit("setLoading", true);
+      axios
+        .delete(`/api/likes/deleteLikeComment/${like_id}/comment_id/${comment_id}`)
+        .then(() => {
           commit("setLoading", false);
           commit("setError", null);
         })
         .catch((error) => {
-          commit("setItems", []);
           commit("setLoading", false);
-          commit("setError", error.message || "Error fetching items");
+          commit("setError", error);
+        });
+    },
+
+    async deleteLikePost({ commit }, { like_id, post_id }) {
+      commit("setLoading", true);
+      axios
+        .delete(`/api/likes/deleteLikePost/${like_id}/comment_id/${post_id}`)
+        .then(() => {
+          commit("setLoading", false);
+          commit("setError", null);
+        })
+        .catch((error) => {
+          commit("setLoading", false);
+          commit("setError", error);
         });
     },
   },
 
   getters: {
-    getPostItems: (state) => state.items,
-    getPostLoading: (state) => state.loading,
-    getPostError: (state) => state.error,
+    getLikeItems: (state) => state.items,
+    getLikeLoading: (state) => state.loading,
+    getLikeError: (state) => state.error,
   },
 };
