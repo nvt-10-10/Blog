@@ -50,7 +50,7 @@ public class UserService
     }
 
     public User login(String email, String pass) {
-        User user = repo.getUserByEmail(email).get();
+        User user = repo.getUserByEmail(email);
         if (user != null && passwordEncoder.matches(pass, user.getPassword())) {
             return user;
         }

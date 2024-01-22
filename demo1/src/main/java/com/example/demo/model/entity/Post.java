@@ -22,36 +22,37 @@ import java.util.List;
 @Table(name = "posts")
 public class Post {
 
-    public interface PostWithUserIntroductionView extends User.baseJson {}
+    public interface PostNotContent extends User.baseJson {}
+    public interface PostFull extends  PostNotContent{}
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @JsonView(Post.PostWithUserIntroductionView.class)
+    @JsonView(Post.PostNotContent.class)
     private int id;
 
     @Column(nullable = false)
-    @JsonView(Post.PostWithUserIntroductionView.class)
+    @JsonView(Post.PostNotContent.class)
     private String title;
 
     @Lob
     @Column(columnDefinition = "LONGTEXT", nullable = false)
-    @JsonView(Post.PostWithUserIntroductionView.class)
+    @JsonView(Post.PostFull.class)
     private String content;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy hh:mm:ss a", timezone = "Asia/Ho_Chi_Minh")
-    @JsonView(Post.PostWithUserIntroductionView.class)
+    @JsonView(Post.PostNotContent.class)
     private Date date;
 
     private boolean status;
-    @JsonView(Post.PostWithUserIntroductionView.class)
+    @JsonView(Post.PostNotContent.class)
     private Long count_comment;
-    @JsonView(Post.PostWithUserIntroductionView.class)
+    @JsonView(Post.PostNotContent.class)
     private Long count_like;
-    @JsonView(Post.PostWithUserIntroductionView.class)
+    @JsonView(Post.PostNotContent.class)
     private Long count_view;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
-    @JsonView(Post.PostWithUserIntroductionView.class)
+    @JsonView(Post.PostNotContent.class)
     private User user;
 
     @OneToMany

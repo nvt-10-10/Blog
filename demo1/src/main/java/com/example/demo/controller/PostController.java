@@ -5,12 +5,10 @@ import com.example.demo.model.entity.User;
 import com.example.demo.service.PostService;
 import com.example.demo.service.UserService;
 import com.fasterxml.jackson.annotation.JsonView;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -31,19 +29,19 @@ public class PostController {
     }
 
     @GetMapping("/page/{page}")
-    @JsonView(Post.PostWithUserIntroductionView.class)
-    public <page> ResponseEntity<List<Post>> getAllPosts(@PathVariable String page) {
+    @JsonView(Post.PostFull.class)
+    public  ResponseEntity<List<Post>> getAllPosts(@PathVariable String page) {
         Pageable pageable = PageRequest.of(Integer.parseInt(page) * 10, 10);
         List<Post> posts = postService.findAll(pageable);
         return new ResponseEntity<>(posts, HttpStatus.OK);
     }
 
     @GetMapping("/{postId}")
-    @JsonView(Post.PostWithUserIntroductionView.class)
+    @JsonView(Post.PostFull.class)
     public ResponseEntity<Post> getPostById(@PathVariable int postId) {
         Post post = postService.findById(postId).get();
         post.setCount_view(post.getCount_view() + 1);
-        updatePost(postId, post);
+        postService.save(post);
         if (post != null) {
             return new ResponseEntity<>(post, HttpStatus.OK);
         } else {
@@ -52,53 +50,17 @@ public class PostController {
     }
 
     @GetMapping("/{postId}/user_id/{user_id}")
-    @JsonView(Post.PostWithUserIntroductionView.class)
+    @JsonView(Post.PostFull.class)
     public ResponseEntity<Map<String, Object>> getPostById(@PathVariable int postId, @PathVariable int user_id) {
+        Post post = postService.findById(postId).get();
+        post.setCount_view(post.getCount_view() + 1);
+
+        postService.save(post);
         return new ResponseEntity<>(postService.findById(user_id, postId), HttpStatus.OK);
     }
 
-    @PostMapping("/create")
-    @JsonView(Post.PostWithUserIntroductionView.class)
-    public ResponseEntity<Post> createPost(
-            @RequestBody Map<String, String> params
-    ) {
-        String title = params.get("title");
-        String content = params.get("content");
-
-        Integer user_id = Integer.parseInt(params.get("user_id"));
-        User user = userService.findById(user_id).get();
-
-        Post post = new Post();
-        post.setUser(user);
-        post.setTitle(title);
-        post.setContent(content);
-        Post savedPost = postService.save(post);
-
-        return new ResponseEntity<>(savedPost, HttpStatus.CREATED);
-    }
-
-    @PutMapping("/{postId}")
-    @JsonView(Post.PostWithUserIntroductionView.class)
-    public ResponseEntity<Post> updatePost(@PathVariable int postId, @RequestBody Post post) {
-        Optional<Post> existingPost = postService.findById(postId);
-        if (existingPost.isPresent()) {
-            post.setId(postId);
-            Post updatedPost = postService.save(post);
-            return new ResponseEntity<>(updatedPost, HttpStatus.OK);
-        } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
-    }
-
-    @DeleteMapping("/{postId}")
-    @JsonView(Post.PostWithUserIntroductionView.class)
-    public ResponseEntity<Void> deletePost(@PathVariable int postId) {
-        postService.deleteById(postId);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-    }
-
     @GetMapping("/user/{user_id}/post/{post_id}")
-    @JsonView(Post.PostWithUserIntroductionView.class)
+    @JsonView(Post.PostNotContent.class)
     public ResponseEntity<List<Post>> getPostsByUserId(@PathVariable String user_id, @PathVariable String post_id) {
         List<Post> posts = postService.findAllByUserID(Integer.parseInt(user_id), post_id == null ? -1 : Integer.parseInt(post_id));
 
@@ -107,6 +69,41 @@ public class PostController {
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
+    }
+
+
+    @PostMapping("/create")
+    public ResponseEntity createPost(
+            @RequestBody Map<String, String> params
+    ) {
+        String title = params.get("title");
+        String content = params.get("content");
+        Integer user_id = Integer.parseInt(params.get("user_id"));
+        User user = userService.findById(user_id).get();
+        Post post = new Post();
+        post.setUser(user);
+        post.setTitle(title);
+        post.setContent(content);
+        postService.save(post);
+        return new ResponseEntity<>(HttpStatus.CREATED);
+    }
+
+    @PutMapping("/{postId}")
+    public ResponseEntity updatePost(@PathVariable int postId, @RequestBody Post post) {
+        Optional<Post> existingPost = postService.findById(postId);
+        if (existingPost.isPresent()) {
+            post.setId(postId);
+            Post updatedPost = postService.save(post);
+            return new ResponseEntity<>( HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @DeleteMapping("/{postId}")
+    public ResponseEntity<Void> deletePost(@PathVariable int postId) {
+        postService.deleteById(postId);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
 }

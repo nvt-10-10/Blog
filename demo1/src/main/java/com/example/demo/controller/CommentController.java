@@ -46,7 +46,6 @@ public class CommentController {
         } else {
             return new ResponseEntity<>(comments, HttpStatus.OK);
         }
-
     }
 
     @GetMapping("/comment-reply/{id}/user_id/{user_id}")
@@ -69,7 +68,6 @@ public class CommentController {
         List<Comment> comments = commentService.findAllCommentByPostID(id,pageable);
         if (!comments.isEmpty()) {
             return new ResponseEntity<>(comments, HttpStatus.OK);
-
         } else {
             return new ResponseEntity<>(HttpStatus.OK);
         }
@@ -87,7 +85,6 @@ public class CommentController {
         List<Map<String,Object>> comments = commentService.findAllCommentByPostIDAndUser(id,userID,pageable);
         if (!comments.isEmpty()) {
             return new ResponseEntity<>(comments, HttpStatus.OK);
-
         } else {
             return new ResponseEntity<>(HttpStatus.OK);
         }
@@ -123,18 +120,15 @@ public class CommentController {
         String user_id = params.get("user_id");
         String comment_id = params.get("comment_id");
         String content = params.get("content");
-
         User user = userService.findById(Integer.parseInt(user_id)).get();
         Comment comment = commentService.findById(Integer.parseInt(comment_id)).get();
         Post post = comment.getPost();
-
         Comment commentReply = new Comment();
         commentReply.setPost(post);
         commentReply.setUser(user);
         commentReply.setContent(content);
         commentReply.setPath(comment.getPath());
         commentReply=commentService.save(commentReply);
-
         commentReply.setPath(comment.getPath()+"_"+commentReply.getId());
         commentService.update(commentReply);
 

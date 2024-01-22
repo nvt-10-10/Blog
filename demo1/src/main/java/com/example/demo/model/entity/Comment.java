@@ -56,7 +56,6 @@ public class Comment {
     @ColumnDefault("false")
     @JsonView(Comment.comment.class)
     private boolean isEdit;
-
     @PrePersist
     public void onCreate() {
         ZoneId zoneId = ZoneId.of("Asia/Ho_Chi_Minh"); // Múi giờ của Việt Nam

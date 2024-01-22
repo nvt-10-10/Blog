@@ -1,5 +1,6 @@
 package com.example.demo.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,8 +14,10 @@ import lombok.Setter;
 @AllArgsConstructor
 @Table(name = "likes")
 public class Like {
+    public interface likePublic {};
     @Id
     @GeneratedValue(strategy =  GenerationType.IDENTITY)
+    @JsonView(Like.likePublic.class)
     private int id;
 
     @ManyToOne

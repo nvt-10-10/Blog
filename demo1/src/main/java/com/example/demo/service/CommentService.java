@@ -62,20 +62,18 @@ public class CommentService implements GenericInterface<Comment> {
 
     public List<Map<String,Object>> findAllCommentByPostIDAndUser(int post_id,int user_id,Pageable pageable){
         List<Map<String,Object>> results = new ArrayList<>();
-        List<Comment> comments = repo.findAllRootComments(post_id,pageable);
-        for (Comment comment: comments
+        List<Object[]> comments =repo.findAllRootComments(post_id,user_id,pageable);
+        for (Object[] comment: comments
         ) {
-            Like like =likeRepository.isLikeComment(comment.getId(),user_id);
-            System.out.println("comment id"+comment.getId()+"\t user"+user_id);
             Map<String,Object> map = new HashMap<>();
-            if (like!=null  ){
+            if ((int )comment[1]!=-1  ){
                 map.put("isLike",true);
-                map.put("like_id",like.getId());
+                map.put("like_id",comment[1]);
             } else {
                 map.put("isLike",false);
                 map.put("like_id",-1);
             }
-            map.put("comment",comment);
+            map.put("comment",comment[0]);
 
             results.add(map);
         }
@@ -84,20 +82,18 @@ public class CommentService implements GenericInterface<Comment> {
 
     public List<Map<String,Object>> findAllCommentByCommentPath(int post_id,String path,int user_id,Pageable pageable){
         List<Map<String,Object>> results = new ArrayList<>();
-        List<Comment> comments =repo.findAllCommentPath(post_id,path,pageable);
-        for (Comment comment: comments
+        List<Object[]> comments =repo.findAllCommentPath(post_id,path,user_id,pageable);
+        for (Object[] comment: comments
         ) {
-            Like like =likeRepository.isLikeComment(comment.getId(),user_id);
-            System.out.println("comment id"+comment.getId()+"\t user"+user_id);
             Map<String,Object> map = new HashMap<>();
-            if (like!=null  ){
+            if ((int )comment[1]!=-1  ){
                 map.put("isLike",true);
-                map.put("like_id",like.getId());
+                map.put("like_id",comment[1]);
             } else {
                 map.put("isLike",false);
                 map.put("like_id",-1);
             }
-            map.put("comment",comment);
+            map.put("comment",comment[0]);
 
             results.add(map);
         }

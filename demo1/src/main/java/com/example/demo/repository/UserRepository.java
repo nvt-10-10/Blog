@@ -9,7 +9,7 @@ import java.util.Optional;
 public interface UserRepository extends CrudRepository<User,Integer> {
 
     @Query("select u from User u where u.email = :email")
-    Optional<User> getUserByEmail(@Param("email") String email);
+    User getUserByEmail(@Param("email") String email);
 
 
 }

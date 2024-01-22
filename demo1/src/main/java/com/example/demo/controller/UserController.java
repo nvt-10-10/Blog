@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,10 +45,8 @@ public class UserController {
             userService.save(user);
             return ResponseEntity.ok("User created successfully");
         } catch (DataIntegrityViolationException e) {
-            // Handle unique constraint violation
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Email address already exists");
         } catch (Exception e) {
-            // Handle other exceptions
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error creating user");
         }
     }
@@ -63,11 +62,9 @@ public class UserController {
     @JsonView(User.fulldata.class)
     public ResponseEntity<User> updateUser(@PathVariable int id, @RequestBody User updatedUser) {
         Optional<User> existingUser = userService.findById(id);
-
         if (existingUser.isPresent()) {
             updatedUser.setId(existingUser.get().getId());
            userService.save(updatedUser);
-
             return new ResponseEntity<>(updatedUser, HttpStatus.OK);
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -88,17 +85,17 @@ public class UserController {
     }
     @PostMapping("/login")
     @JsonView(User.baseJson.class)
-    public ResponseEntity<User> submitForm(
-            @RequestBody  Map<String, String> params) {
+    public ResponseEntity<?> submitForm(@RequestBody Map<String, String> params) {
         String email = params.get("email");
         String password = params.get("password");
-        System.out.println("size"+ params.size());
-        System.out.println(email+"\t"+password);
         User user = userService.login(email, password);
-        if (user!=null) {
+        if (user != null) {
             return new ResponseEntity<>(user, HttpStatus.OK);
         } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Không thành công");
+            return new ResponseEntity<>(errorResponse, HttpStatus.OK);
         }
     }
+
 }
